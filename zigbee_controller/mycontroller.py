@@ -75,7 +75,7 @@ class MyController:  # Seen as singleton
                 case Mode.DEFAULT:
                     next_state = DefaultMode()
                 case Mode.LIGHT_SHOW:
-                    next_state = ls.LightShowMode(setting=mode_setting, controller=self)
+                    next_state = ls.LightShowMode(routine_index=mode_setting, controller=self)
                 case Mode.GAME:
                     next_state = DefaultMode()
                 case Mode.SITTNING:

@@ -21,11 +21,17 @@ from utils import RGB_to_XY
 if TYPE_CHECKING:
     from mycontroller import MyController
 
+"""
+Create your routine at the bottom.
+Then add it to self.routines below.
+Select a routine using the endpoint by using mode_setting(routine_index).
+"""
+
 
 class LightShowMode(ModeABC):
     name = Mode.LIGHT_SHOW
 
-    def __init__(self, controller: MyController, setting: int):
+    def __init__(self, controller: MyController, routine_index: int):
         lights = controller.new_lightsID
         self.routines = [
             circle_rainbow_fade(controller=controller, lights=lights),
@@ -34,7 +40,7 @@ class LightShowMode(ModeABC):
             every_other(controller=controller, lights=lights),
         ]
         self.controller = controller
-        self.setting = min(len(self.routines) - 1, max(0, setting))
+        self.setting = min(len(self.routines) - 1, max(0, routine_index))
         self._background_task: asyncio.Task | None = None
 
     @override
