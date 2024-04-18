@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 from mytypes import COLORS_UINT8, COLORTEMP250_454, ID, RGBI_UINT8, LampMessage
@@ -18,22 +19,26 @@ def gen_lamp_message(colors: RGBI_UINT8 | None, color_temp: COLORTEMP250_454 = 2
     return LampMessage(state="ON", brightness=i, color=RGB_to_XY(r, g, b), color_temp=color_temp)
 
 
-async def _circle_fade(
+async def publish_apply_mapping(controller: MyController, lights: Iterable[ID], mapping_message: list[LampMessage]):
+    await asyncio.gather(*(controller.publish_light(id, rc) for id, rc in zip(lights, mapping_message)))
+
+
+async def _rotate_lights_1step(
     controller: MyController,
     lights: list[ID],
-    colors: COLORS_UINT8,
+    colors_mapping: COLORS_UINT8,
     sleep: float = 0.5,
-    cw: bool = False,
+    clockwise: bool = False,
 ):
-    new_lights = deque(lights)
     # Mapping
-    fading_colors = [gen_lamp_message(rgbi) for rgbi in colors]
+    color_mapping_message = [gen_lamp_message(rgbi) for rgbi in colors_mapping]
+    if clockwise:
+        color_mapping_message.reverse()
 
-    if cw:
-        fading_colors.reverse()
+    new_lights = deque(lights)
     while True:
-        await asyncio.gather(*(controller.publish_light(addr, rc) for addr, rc in zip(new_lights, fading_colors)))
-        if cw:
+        await publish_apply_mapping(controller=controller, lights=new_lights, mapping_message=color_mapping_message)
+        if clockwise:
             new_lights.append(new_lights.popleft())
         else:
             new_lights.appendleft(new_lights.pop())
@@ -44,9 +49,9 @@ async def circle_rainbow_fade(
     controller: MyController,
     lights: list[ID],
     sleep: float = 0.5,
-    cw: bool = False,
+    clockwise: bool = False,
 ):
-    rainbow_colors = [
+    rainbow_mapping: COLORS_UINT8 = [
         (148, 0, 211, 100),
         (75, 0, 130, 80),
         (0, 0, 255, 60),
@@ -57,16 +62,16 @@ async def circle_rainbow_fade(
         None,
         None,
     ]
-    await _circle_fade(controller, lights, rainbow_colors, sleep=sleep, cw=cw)
+    await _rotate_lights_1step(controller, lights, rainbow_mapping, sleep=sleep, clockwise=clockwise)
 
 
 async def circle_bw_fade(
     controller: MyController,
     lights: list[ID],
     sleep: float = 0.5,
-    cw: bool = False,
+    clockwise: bool = False,
 ):
-    bw_colors = [
+    bw_mapping: COLORS_UINT8 = [
         (255, 255, 255, 100),
         (255, 255, 255, 80),
         (255, 255, 255, 60),
@@ -77,9 +82,9 @@ async def circle_bw_fade(
         None,
         None,
     ]
-    await _circle_fade(controller, lights, bw_colors, sleep=sleep, cw=cw)
+    await _rotate_lights_1step(controller, lights, bw_mapping, sleep=sleep, clockwise=clockwise)
 
 
 async def every_other(controller: MyController, lights: list[ID], sleep: float = 0.5):
-    other_colors: COLORS_UINT8 = [(255, 255, 255, 120) if (i % 2) == 0 else None for i in range(len(lights))]
-    await _circle_fade(controller, lights, other_colors, sleep=sleep)
+    other_mapping: COLORS_UINT8 = [(255, 255, 255, 120) if (i % 2) == 0 else None for i in range(len(lights))]
+    await _rotate_lights_1step(controller, lights, other_mapping, sleep=sleep)

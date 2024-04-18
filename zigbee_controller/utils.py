@@ -104,7 +104,7 @@ class LightShowState:
     def __post_init__(self):
         self.routines = [
             ls.circle_rainbow_fade(self.controller, lights=self.controller.lights),
-            ls.circle_rainbow_fade(self.controller, lights=self.controller.lights, cw=True),
+            ls.circle_rainbow_fade(self.controller, lights=self.controller.lights, clockwise=True),
             ls.circle_bw_fade(self.controller, lights=self.controller.lights),
             ls.every_other(self.controller, lights=self.controller.lights),
         ]
