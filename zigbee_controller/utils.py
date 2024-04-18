@@ -79,13 +79,13 @@ class MyController:  # Seen as singleton
         else:
             await self._publish(id, json.dumps(message))
 
-    async def set_state(self, state: Mode, state_setting: int = 0) -> None | str:
+    async def set_state(self, mode: Mode, mode_setting: int = 0) -> None | str:
         try:
-            match state:
+            match mode:
                 case Mode.DEFAULT:
                     next_state = DefaultMode()
                 case Mode.LIGHT_SHOW:
-                    next_state = ls.LightShowMode(setting=state_setting, controller=self)
+                    next_state = ls.LightShowMode(setting=mode_setting, controller=self)
                 case Mode.GAME:
                     next_state = DefaultMode()
                 case Mode.SITTNING:
@@ -103,7 +103,7 @@ class DefaultMode:
     name = Mode.DEFAULT
 
     async def run(self) -> None:
-        return None
+        pass
 
     async def remote_callback(self, message: RemoteRequest, remote_index: int) -> None:
         """Remote index gives you an interface to simply track remotes by their index instead of real id, can be useful"""
