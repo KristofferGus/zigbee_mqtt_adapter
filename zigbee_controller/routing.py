@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from const import COLOR_CONVERTER, OK
+from const import OK
 from litestar import get, post
 from litestar.controller import Controller
 from litestar.exceptions import ClientException
@@ -27,8 +27,8 @@ class RootRouter(Controller):
     )
     async def root(self, controller: MyController) -> dict[str, list[str] | dict[int, str]]:
         return {
-            "lights": [x["id"] for x in controller.lights],
-            "remotes": [x["id"] for x in controller.remotes],
+            "lights": [x["id"] for x in controller._lights],
+            "remotes": [x["id"] for x in controller._remotes],
             "states": {x.value: x.name for x in ModeState},
         }
 
@@ -139,7 +139,7 @@ class RootRouter(Controller):
         if not isinstance(controller.state, DefaultState):
             raise ClientException("Only allowed during *Default* state, reset or change first")
 
-        if not (-1 <= index < (clight_len := len(controller.lights))):
+        if not (-1 <= index < (clight_len := len(controller._lights))):
             raise ClientException(f"Invalid index selected, select a value between 0-{clight_len}")
 
         message = LampMessage()
@@ -167,4 +167,4 @@ class RootRouter(Controller):
         if index == -1:
             await controller.publish_all_lights(message=message)
         else:
-            await controller.publish_light(id=controller.lights[index]["id"], message=message)
+            await controller.publish_light(id=controller._lights[index]["id"], message=message)

@@ -10,10 +10,10 @@ import orjson as json
 from aiomqtt import Client as MQTTClient
 from const import COLOR_CONVERTER, PUBLISH_PREFIX
 from mytypes import (
+    ID,
     UINT8,
     ConfigFile,
     DeviceConfig,
-    Id,
     LampMessage,
     ModeState,
     RemoteRequest,
@@ -25,16 +25,15 @@ class MyController:  # Seen as singleton
     def __init__(self, mqtt_hostname: str, lights: list[DeviceConfig], remotes: list[DeviceConfig]):
         self.mqtt = MQTTClient(hostname=mqtt_hostname, port=1883, identifier="MyZip")
         self.lock = asyncio.Lock()
-        self.lights = lights
-        self.remotes = remotes
-        # Each state should have run, a
+        self._lights = lights
+        self._remotes = remotes
         self.state: LightShowState | DefaultState = DefaultState()
 
     async def __remote_listener(self):  # Actual remotes, always running.
         task_shield = set()  # Prevent tasks from disappearing
-        unique_id_to_index = {x["id"]: i for i, x in enumerate(self.remotes)}
+        unique_id_to_index = {x["id"]: i for i, x in enumerate(self._remotes)}
         async for msg in self.mqtt.messages:
-            if self.remotes:  # Ignore if there are no remotes
+            if self._remotes:  # Ignore if there are no remotes
                 message: RemoteRequest = json.loads(cast(bytes, msg.payload))
                 unique_id = msg.topic.value.split("/")[1]
                 remote_index = unique_id_to_index[unique_id]
@@ -54,16 +53,24 @@ class MyController:  # Seen as singleton
         await event.wait()
 
         await self.set_state(ModeState.DEFAULT)
-        for remote in self.remotes:
+        for remote in self._remotes:
             await self.mqtt.subscribe(topic=f'{PUBLISH_PREFIX}/{remote["id"]}/#', qos=1)
         self._remote_listener_task = asyncio.create_task(self.__remote_listener())
 
+    @property
+    def lights(self) -> list[ID]:
+        return [l["id"] for l in self._lights]
+
+    @property
+    def remotes(self) -> list[ID]:
+        return [l["id"] for l in self._remotes]
+
     async def publish_all_lights(self, message: LampMessage):
         data = json.dumps(message)
-        gen = (self.mqtt.publish(topic=f"{PUBLISH_PREFIX}/{id}/set", payload=data, qos=1) for id in self.lights)
+        gen = (self.mqtt.publish(topic=f"{PUBLISH_PREFIX}/{id}/set", payload=data, qos=1) for id in self._lights)
         await asyncio.gather(*gen)
 
-    async def publish_light(self, id: Id, message: LampMessage):
+    async def publish_light(self, id: ID, message: LampMessage):
         await self.mqtt.publish(topic=f"{PUBLISH_PREFIX}/{id}/set", payload=json.dumps(message), qos=1)
 
     async def set_state(self, state: ModeState, state_setting: int = 0) -> None | str:
@@ -106,7 +113,7 @@ class LightShowState:
 
     async def remote_callback(self, message: RemoteRequest, remote_index: int) -> None:
         self.setting += 1
-        await self.controller.set_state(self.name, self.setting % len(self.controller.lights))
+        await self.controller.set_state(self.name, self.setting % len(self.controller._lights))
 
     async def cancel(self) -> None:
         if self._background_task:

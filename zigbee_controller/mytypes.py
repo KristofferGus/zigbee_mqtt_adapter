@@ -6,19 +6,20 @@ from typing import Literal, TypedDict
 COLORTEMP250_454 = int  # Probably 2500k-4540k but in 250-454 range.
 RED_UINT8 = GREEN_UINT8 = BLUE_UINT8 = UINT8 = UINT32 = BRIGHTNESS_UNIT8 = int
 # Types
-COLORS_UINT8 = list[tuple[RED_UINT8, GREEN_UINT8, BLUE_UINT8, BRIGHTNESS_UNIT8] | None]
+RGBI_UINT8 = tuple[RED_UINT8, GREEN_UINT8, BLUE_UINT8, BRIGHTNESS_UNIT8]
+COLORS_UINT8 = list[RGBI_UINT8 | None]
 RGB = tuple[RED_UINT8, GREEN_UINT8, BLUE_UINT8]
-Id = str
+ID = str
 LampState = Literal["ON", "OFF"]
 
 
 class DeviceConfig(TypedDict):
-    id: Id
+    id: ID
 
 
 class ConfigFile(TypedDict):
     lights: list[DeviceConfig]
-    remotes: list[DeviceConfig] # NotRequired
+    remotes: list[DeviceConfig]  # NotRequired
 
 
 class XYColor(TypedDict):
