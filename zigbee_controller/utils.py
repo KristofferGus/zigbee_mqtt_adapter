@@ -5,7 +5,7 @@ import tomllib
 from dataclasses import dataclass
 from typing import TypedDict, cast
 
-import Modes.light_show as ls
+import modes.light_show as ls
 import orjson as json
 from aiomqtt import Client as MQTTClient
 from const import COLOR_CONVERTER, PUBLISH_PREFIX
