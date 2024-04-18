@@ -1,0 +1,19 @@
+# Lights have to be ordered to this index:
+#  Index 0 starts at the door
+#  Indices increases along the long wall
+#   Then across the shorter wall and back along the window-wall
+[[lights]]
+id = "0xa46dd4fffe6766fb"
+
+[[lights]]
+id = "0xdeadbeefdeadbeef"
+
+[[lights]]
+id = "0xabbaabbaabbaabba"
+
+[[lights]]
+id = "0xbeefcacebeefcace"
+
+# Uncomment remotes if remotes are used.
+# [[remotes]]
+# id = "0x5cc7c1fffe8b7a9d"
