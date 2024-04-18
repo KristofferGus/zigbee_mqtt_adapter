@@ -82,7 +82,7 @@ class RootRouter(Controller):
     @get(
         path=["/light", "light/{index:int}"],
         description=(
-            "ONLY Allowed during Default state, reset or change state first!\n\n"
+            "ONLY Allowed during Default state; reset or change state first!\n\n"
             "Query args, if path(index) is not -1 -> light starting from: door(0)->longwall-shortwall-windows(max)\n\n"
             " Else if -1: all lights will be affected\n\n"
             "(st)ate: ON | OFF\n\n"
@@ -109,7 +109,7 @@ class RootRouter(Controller):
     @post(
         path=["/light", "light/{index:int}"],
         description=(
-            "ONLY Allowed during Default state, reset or change state first!\n\n"
+            "ONLY Allowed during Default state; reset or change state first!\n\n"
             "At least one parameter has to be used, some can be omitted.\n\n"
             "Query args, if path(index) is not -1 -> light starting from: door(0)->longwall-shortwall-windows(max)\n\n"
             " Else if -1: all lights will be affected\n\n"
