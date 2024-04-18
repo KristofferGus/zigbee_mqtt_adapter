@@ -27,8 +27,8 @@ class RootRouter(Controller):
     )
     async def root(self, controller: MyController) -> dict[str, list[str] | dict[int, str]]:
         return {
-            "lights": [x["id"] for x in controller._lights],
-            "remotes": [x["id"] for x in controller._remotes],
+            "lights": controller.lights,
+            "remotes": controller.remotes,
             "states": {x.value: x.name for x in ModeState},
         }
 
@@ -167,4 +167,4 @@ class RootRouter(Controller):
         if index == -1:
             await controller.publish_all_lights(message=message)
         else:
-            await controller.publish_light(id=controller._lights[index]["id"], message=message)
+            await controller.publish_light(id=controller._lights[index].id, message=message)

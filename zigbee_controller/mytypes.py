@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 from typing import Literal, TypedDict
 
@@ -11,6 +12,11 @@ COLORS_UINT8 = list[RGBI_UINT8 | None]
 RGB = tuple[RED_UINT8, GREEN_UINT8, BLUE_UINT8]
 ID = str
 LampState = Literal["ON", "OFF"]
+
+
+@dataclass
+class Device:
+    id: ID
 
 
 class DeviceConfig(TypedDict):

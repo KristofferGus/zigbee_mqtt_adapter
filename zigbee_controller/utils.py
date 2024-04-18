@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import tomllib
 from dataclasses import dataclass
-from typing import cast
+from typing import TypedDict, cast
 
 import light_show as ls
 import orjson as json
@@ -13,6 +13,7 @@ from mytypes import (
     ID,
     UINT8,
     ConfigFile,
+    Device,
     DeviceConfig,
     LampMessage,
     ModeState,
@@ -22,7 +23,7 @@ from mytypes import (
 
 
 class MyController:  # Seen as singleton
-    def __init__(self, mqtt_hostname: str, lights: list[DeviceConfig], remotes: list[DeviceConfig]):
+    def __init__(self, mqtt_hostname: str, lights: list[Device], remotes: list[Device]):
         self.mqtt = MQTTClient(hostname=mqtt_hostname, port=1883, identifier="MyZip")
         self.lock = asyncio.Lock()
         self._lights = lights
@@ -31,7 +32,7 @@ class MyController:  # Seen as singleton
 
     async def __remote_listener(self):  # Actual remotes, always running.
         task_shield = set()  # Prevent tasks from disappearing
-        unique_id_to_index = {x["id"]: i for i, x in enumerate(self._remotes)}
+        unique_id_to_index = {x.id: i for i, x in enumerate(self._remotes)}
         async for msg in self.mqtt.messages:
             if self._remotes:  # Ignore if there are no remotes
                 message: RemoteRequest = json.loads(cast(bytes, msg.payload))
@@ -54,16 +55,16 @@ class MyController:  # Seen as singleton
 
         await self.set_state(ModeState.DEFAULT)
         for remote in self._remotes:
-            await self.mqtt.subscribe(topic=f'{PUBLISH_PREFIX}/{remote["id"]}/#', qos=1)
+            await self.mqtt.subscribe(topic=f"{PUBLISH_PREFIX}/{remote.id}/#", qos=1)
         self._remote_listener_task = asyncio.create_task(self.__remote_listener())
 
     @property
     def lights(self) -> list[ID]:
-        return [l["id"] for l in self._lights]
+        return [l.id for l in self._lights]
 
     @property
     def remotes(self) -> list[ID]:
-        return [l["id"] for l in self._remotes]
+        return [l.id for l in self._remotes]
 
     async def publish_all_lights(self, message: LampMessage):
         data = json.dumps(message)
@@ -179,7 +180,14 @@ def RGB_to_XY(r: UINT8, g: UINT8, b: UINT8) -> XYColor:
     return XYColor(x=x, y=y)
 
 
-def load_config() -> ConfigFile:
+def load_config():
+    class RetType(TypedDict):
+        lights: list[Device]
+        remotes: list[Device]
+
     with open("config.toml", "rb") as f:
         cfg = ConfigFile(**tomllib.load(f))  # remotes might be missing
-    return {"lights": cfg["lights"], "remotes": cfg.get("remotes", [])}
+    return RetType(
+        lights=[Device(**l) for l in cfg["lights"]],
+        remotes=[Device(**r) for r in cfg.get("remotes", [])],
+    )
