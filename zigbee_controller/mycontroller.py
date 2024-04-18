@@ -47,11 +47,13 @@ class MyController:  # Seen as singleton
         self._remote_listener_task = asyncio.create_task(self.__remote_listener())
 
     @property
-    def lights(self) -> list[ID]:
+    def new_lightsID(self) -> list[ID]:
+        """Returns a new list with unique ids"""
         return [l.id for l in self._lights]
 
     @property
-    def remotes(self) -> list[ID]:
+    def new_remotesID(self) -> list[ID]:
+        """Returns a new list with unique ids"""
         return [l.id for l in self._remotes]
 
     async def _publish(self, id: ID, payload: bytes) -> None:  # For type-safety
@@ -63,10 +65,9 @@ class MyController:  # Seen as singleton
 
     async def publish_light(self, id: ID, message: LampMessage | bytes):
         """Bytes for pre-dumped messages, for speedup"""
-        if isinstance(message, bytes):
-            await self._publish(id, message)
-        else:
-            await self._publish(id, json.dumps(message))
+        if not isinstance(message, bytes):
+            message = json.dumps(message)
+        await self._publish(id, message)
 
     async def set_state(self, mode: Mode, mode_setting: int = 0) -> None | str:
         try:

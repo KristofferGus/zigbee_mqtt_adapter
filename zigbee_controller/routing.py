@@ -28,8 +28,8 @@ class RootRouter(Controller):
     )
     async def root(self, controller: MyController) -> dict[str, list[str] | dict[int, str]]:
         return {
-            "lights": controller.lights,
-            "remotes": controller.remotes,
+            "lights": controller.new_lightsID,
+            "remotes": controller.new_remotesID,
             "states": {x.value: x.name for x in Mode},
         }
 

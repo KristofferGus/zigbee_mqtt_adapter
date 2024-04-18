@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 from collections import deque
 from collections.abc import Iterable
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, override
 
 import orjson as json
@@ -27,11 +26,12 @@ class LightShowMode(ModeABC):
     name = Mode.LIGHT_SHOW
 
     def __init__(self, controller: MyController, setting: int):
+        lights = controller.new_lightsID
         self.routines = [
-            circle_rainbow_fade(self.controller, lights=self.controller.lights),
-            circle_rainbow_fade(self.controller, lights=self.controller.lights, clockwise=True),
-            circle_bw_fade(self.controller, lights=self.controller.lights),
-            every_other(self.controller, lights=self.controller.lights),
+            circle_rainbow_fade(controller=controller, lights=lights),
+            circle_rainbow_fade(controller=controller, lights=lights, clockwise=True),
+            circle_bw_fade(controller=controller, lights=lights),
+            every_other(controller=controller, lights=lights),
         ]
         self.controller = controller
         self.setting = min(len(self.routines) - 1, max(0, setting))
@@ -44,7 +44,7 @@ class LightShowMode(ModeABC):
     @override
     async def remote_callback(self, message: RemoteRequest, remote_index: int) -> None:
         self.setting += 1
-        if self.setting >= len(self.controller._lights):
+        if self.setting >= len(self.routines):
             self.setting = 0
         await self.controller.set_state(self.name, self.setting)
 
