@@ -3,14 +3,62 @@ from __future__ import annotations
 import asyncio
 from collections import deque
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import orjson as json
-from mytypes import COLORS_UINT8, COLORTEMP250_454, ID, RGBI_UINT8, LampMessage
+from mytypes import (
+    COLORS_UINT8,
+    COLORTEMP250_454,
+    ID,
+    RGBI_UINT8,
+    LampMessage,
+    Mode,
+    RemoteRequest,
+)
 from utils import RGB_to_XY
 
 if TYPE_CHECKING:
     from utils import MyController
+
+
+@dataclass
+class LightShowMode:
+    setting: int
+    controller: MyController
+    name = Mode.LIGHT_SHOW
+    _background_task: asyncio.Task | None = None
+
+    def __post_init__(self):
+        self.routines = [
+            circle_rainbow_fade(self.controller, lights=self.controller.lights),
+            circle_rainbow_fade(self.controller, lights=self.controller.lights, clockwise=True),
+            circle_bw_fade(self.controller, lights=self.controller.lights),
+            every_other(self.controller, lights=self.controller.lights),
+        ]
+        self.setting = min(len(self.routines) - 1, max(0, self.setting))
+
+    async def run(self) -> None:
+        self._background_task = asyncio.create_task(self.routines[self.setting])
+
+    async def remote_callback(self, message: RemoteRequest, remote_index: int) -> None:
+        self.setting += 1
+        if self.setting >= len(self.controller._lights):
+            self.setting = 0
+        await self.controller.set_state(self.name, self.setting)
+
+    async def cancel(self) -> None:
+        if self._background_task:
+            self._background_task.cancel()
+            try:
+                await self._background_task
+            except asyncio.CancelledError:
+                pass
+
+
+"""
+Functions
+"""
 
 
 def gen_lamp_message(colors: RGBI_UINT8 | None, color_temp: COLORTEMP250_454 = 250) -> LampMessage:
@@ -26,6 +74,11 @@ async def publish_apply_mapping(
     mapping_message: list[bytes] | list[LampMessage],
 ):
     await asyncio.gather(*(controller.publish_light(id, rc) for id, rc in zip(lights, mapping_message)))
+
+
+"""
+Procedures
+"""
 
 
 async def _rotate_lights_1step(

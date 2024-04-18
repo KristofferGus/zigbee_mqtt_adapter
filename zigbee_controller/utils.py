@@ -5,7 +5,7 @@ import tomllib
 from dataclasses import dataclass
 from typing import TypedDict, cast
 
-import light_show as ls
+import Modes.light_show as ls
 import orjson as json
 from aiomqtt import Client as MQTTClient
 from const import COLOR_CONVERTER, PUBLISH_PREFIX
@@ -15,7 +15,7 @@ from mytypes import (
     ConfigFile,
     Device,
     LampMessage,
-    ModeState,
+    Mode,
     RemoteRequest,
     XYColor,
 )
@@ -27,7 +27,7 @@ class MyController:  # Seen as singleton
         self.lock = asyncio.Lock()
         self._lights = lights
         self._remotes = remotes
-        self.state: LightShowState | DefaultState = DefaultState()
+        self.mode: ls.LightShowMode | DefaultMode = DefaultMode()
 
     async def __remote_listener(self):  # Actual remotes, always running.
         task_shield = set()  # Prevent tasks from disappearing
@@ -37,7 +37,7 @@ class MyController:  # Seen as singleton
                 message: RemoteRequest = json.loads(cast(bytes, msg.payload))
                 unique_id = msg.topic.value.split("/")[1]
                 remote_index = unique_id_to_index[unique_id]
-                task = asyncio.create_task(self.state.remote_callback(message, remote_index))
+                task = asyncio.create_task(self.mode.remote_callback(message, remote_index))
                 task_shield.add(task)
                 task.add_done_callback(task_shield.discard)
 
@@ -52,7 +52,7 @@ class MyController:  # Seen as singleton
         self.__mqtt_conn = asyncio.create_task(_mqtt_runner(self.mqtt))  # Keep a reference, else disconnect.
         await event.wait()
 
-        await self.set_state(ModeState.DEFAULT)
+        await self.set_state(Mode.DEFAULT)
         for remote in self._remotes:
             await self.mqtt.subscribe(topic=f"{PUBLISH_PREFIX}/{remote.id}/#", qos=1)
         self._remote_listener_task = asyncio.create_task(self.__remote_listener())
@@ -79,60 +79,28 @@ class MyController:  # Seen as singleton
         else:
             await self._publish(id, json.dumps(message))
 
-    async def set_state(self, state: ModeState, state_setting: int = 0) -> None | str:
+    async def set_state(self, state: Mode, state_setting: int = 0) -> None | str:
         try:
             match state:
-                case ModeState.DEFAULT:
-                    next_state = DefaultState()
-                case ModeState.LIGHT_SHOW:
-                    next_state = LightShowState(setting=state_setting, controller=self)
-                case ModeState.GAME:
-                    next_state = DefaultState()
-                case ModeState.SITTNING:
-                    next_state = DefaultState()
-            await self.state.cancel()
-            self.state = next_state
-            await self.state.run()
+                case Mode.DEFAULT:
+                    next_state = DefaultMode()
+                case Mode.LIGHT_SHOW:
+                    next_state = ls.LightShowMode(setting=state_setting, controller=self)
+                case Mode.GAME:
+                    next_state = DefaultMode()
+                case Mode.SITTNING:
+                    next_state = DefaultMode()
+            await self.mode.cancel()
+            self.mode = next_state
+            await self.mode.run()
             return None
         except BaseException as e:
             raise RuntimeError("Set state failed: " + str(e))
 
 
 @dataclass
-class LightShowState:
-    setting: int
-    controller: MyController
-    name = ModeState.LIGHT_SHOW
-    _background_task: asyncio.Task | None = None
-
-    def __post_init__(self):
-        self.routines = [
-            ls.circle_rainbow_fade(self.controller, lights=self.controller.lights),
-            ls.circle_rainbow_fade(self.controller, lights=self.controller.lights, clockwise=True),
-            ls.circle_bw_fade(self.controller, lights=self.controller.lights),
-            ls.every_other(self.controller, lights=self.controller.lights),
-        ]
-        self.setting = min(len(self.routines) - 1, max(0, self.setting))
-
-    async def run(self) -> None:
-        self._background_task = asyncio.create_task(self.routines[self.setting])
-
-    async def remote_callback(self, message: RemoteRequest, remote_index: int) -> None:
-        self.setting += 1
-        await self.controller.set_state(self.name, self.setting % len(self.controller._lights))
-
-    async def cancel(self) -> None:
-        if self._background_task:
-            self._background_task.cancel()
-            try:
-                await self._background_task
-            except asyncio.CancelledError:
-                pass
-
-
-@dataclass
-class DefaultState:
-    name = ModeState.DEFAULT
+class DefaultMode:
+    name = Mode.DEFAULT
 
     async def run(self) -> None:
         return None
@@ -190,7 +158,7 @@ def load_config():
         lights: list[Device]
         remotes: list[Device]
 
-    with open("zigbee_controller/config.toml", "rb") as f:
+    with open("config.toml", "rb") as f:
         cfg = ConfigFile(**tomllib.load(f))  # remotes might be missing
     return RetType(
         lights=[Device(**l) for l in cfg["lights"]],

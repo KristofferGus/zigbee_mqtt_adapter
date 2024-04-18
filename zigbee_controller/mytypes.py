@@ -52,7 +52,7 @@ class LampApiMessage(TypedDict, total=False):
     color_temp: COLORTEMP250_454
 
 
-class ModeState(IntEnum):
+class Mode(IntEnum):
     DEFAULT = 0
     LIGHT_SHOW = 1
     GAME = 2

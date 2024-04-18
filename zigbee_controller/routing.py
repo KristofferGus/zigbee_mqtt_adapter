@@ -11,9 +11,9 @@ from mytypes import (
     LampApiMessage,
     LampMessage,
     LampState,
-    ModeState,
+    Mode,
 )
-from utils import DefaultState, MyController, RGB_to_XY
+from utils import DefaultMode, MyController, RGB_to_XY
 
 
 class RootRouter(Controller):
@@ -29,7 +29,7 @@ class RootRouter(Controller):
         return {
             "lights": controller.lights,
             "remotes": controller.remotes,
-            "states": {x.value: x.name for x in ModeState},
+            "states": {x.value: x.name for x in Mode},
         }
 
     @get(path="/on", status_code=200, description="Turns state on")
@@ -56,7 +56,7 @@ class RootRouter(Controller):
                 color=RGB_to_XY(255, 255, 255),
                 color_temp=300,
             )
-            await controller.set_state(ModeState.DEFAULT)
+            await controller.set_state(Mode.DEFAULT)
             await controller.publish_all_lights(message)
         return OK
 
@@ -65,16 +65,16 @@ class RootRouter(Controller):
         description=(
             "If only one path is given, then use default setting of this state.\n\n"
             "Second path sets the setting of the state\n\n"
-            f"Valid values of states is: {list(range(len(ModeState)))}"
+            f"Valid values of states is: {list(range(len(Mode)))}"
         ),
         raises=[ClientException],
     )
     async def state_change(self, controller: MyController, id: int, setting: int = 0) -> str:
-        if not (0 <= id < len(ModeState)):
-            raise ClientException(f"Invalid id value: 0-{len(ModeState)-1}, you gave: {id}")
+        if not (0 <= id < len(Mode)):
+            raise ClientException(f"Invalid id value: 0-{len(Mode)-1}, you gave: {id}")
 
         async with controller.lock:
-            if err := await controller.set_state(list(ModeState)[id], setting):
+            if err := await controller.set_state(list(Mode)[id], setting):
                 raise ClientException(err)
         return OK
 
@@ -136,7 +136,7 @@ class RootRouter(Controller):
         color: RGB | None = None,
         color_temp: COLORTEMP250_454 | None = None,
     ):
-        if not isinstance(controller.state, DefaultState):
+        if not isinstance(controller.mode, DefaultMode):
             raise ClientException("Only allowed during *Default* state, reset or change first")
 
         if not (-1 <= index < (clight_len := len(controller._lights))):
