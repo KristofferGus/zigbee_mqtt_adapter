@@ -4,7 +4,7 @@ import asyncio
 from collections import deque
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 import orjson as json
 from mytypes import (
@@ -14,39 +14,41 @@ from mytypes import (
     RGBI_UINT8,
     LampMessage,
     Mode,
+    ModeABC,
     RemoteRequest,
 )
 from utils import RGB_to_XY
 
 if TYPE_CHECKING:
-    from utils import MyController
+    from mycontroller import MyController
 
 
-@dataclass
-class LightShowMode:
-    setting: int
-    controller: MyController
+class LightShowMode(ModeABC):
     name = Mode.LIGHT_SHOW
-    _background_task: asyncio.Task | None = None
 
-    def __post_init__(self):
+    def __init__(self, controller: MyController, setting: int):
         self.routines = [
             circle_rainbow_fade(self.controller, lights=self.controller.lights),
             circle_rainbow_fade(self.controller, lights=self.controller.lights, clockwise=True),
             circle_bw_fade(self.controller, lights=self.controller.lights),
             every_other(self.controller, lights=self.controller.lights),
         ]
-        self.setting = min(len(self.routines) - 1, max(0, self.setting))
+        self.controller = controller
+        self.setting = min(len(self.routines) - 1, max(0, setting))
+        self._background_task: asyncio.Task | None = None
 
+    @override
     async def run(self) -> None:
         self._background_task = asyncio.create_task(self.routines[self.setting])
 
+    @override
     async def remote_callback(self, message: RemoteRequest, remote_index: int) -> None:
         self.setting += 1
         if self.setting >= len(self.controller._lights):
             self.setting = 0
         await self.controller.set_state(self.name, self.setting)
 
+    @override
     async def cancel(self) -> None:
         if self._background_task:
             self._background_task.cancel()

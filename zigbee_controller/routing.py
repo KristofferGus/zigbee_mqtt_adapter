@@ -4,6 +4,7 @@ from const import OK
 from litestar import get, post
 from litestar.controller import Controller
 from litestar.exceptions import ClientException
+from mycontroller import DefaultMode, MyController
 from mytypes import (
     BRIGHTNESS_UNIT8,
     COLORTEMP250_454,
@@ -13,12 +14,12 @@ from mytypes import (
     LampState,
     Mode,
 )
-from utils import DefaultMode, MyController, RGB_to_XY
+from utils import RGB_to_XY
 
 
 class RootRouter(Controller):
     @get(
-        "/",
+        path="/",
         description=(
             "Returns json with Keys: 'light', 'remotes', 'states'\n\n"
             "light/remote-value: list of valid ids\n\n"

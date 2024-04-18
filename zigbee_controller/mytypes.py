@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 from typing import Literal, TypedDict
@@ -57,6 +58,44 @@ class Mode(IntEnum):
     LIGHT_SHOW = 1
     GAME = 2
     SITTNING = 3
+
+
+class ModeABC(ABC):
+    async def run(self) -> None: ...
+    async def cancel(self) -> None: ...
+    async def remote_callback(self, message: RemoteRequest, remote_index: int) -> None:
+        """
+        Remote index gives you an interface to simply track remotes
+        by their index instead of real id, can be useful
+        Example remote_callback:
+            async def remote_callback(self, message: RemoteRequest, remote_index: int):
+                state = ModeState.LIGHT_SHOW
+                match message["action"]:
+                    case RemoteAction.ON:
+                        pass
+                    case RemoteAction.OFF:
+                        pass
+                    case RemoteAction.BRIGHTESS_MOVE_UP:
+                        pass
+                    case RemoteAction.BRIGHTESS_MOVE_DOWN:
+                        pass
+                    case RemoteAction.BRIGHTESS_MOVE_STOP:
+                        pass
+                    case RemoteAction.ARROW_LEFT_CLICK:
+                        pass
+                    case RemoteAction.ARROW_LEFT_HOLD:
+                        pass
+                    case RemoteAction.ARROW_LEFT_RELEASE:
+                        pass
+                    case RemoteAction.ARROW_RIGHT_CLICK:
+                        pass
+                    case RemoteAction.ARROW_RIGHT_HOLD:
+                        pass
+                    case RemoteAction.ARROW_RIGHT_RELEASE:
+                        pass
+                    case _:
+                        raise ValueError("Unknown remote message received")
+        """
 
 
 class RemoteAction(StrEnum):
