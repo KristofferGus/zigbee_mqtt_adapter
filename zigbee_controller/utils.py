@@ -66,13 +66,15 @@ class MyController:  # Seen as singleton
     def remotes(self) -> list[ID]:
         return [l.id for l in self._remotes]
 
+    async def _publish(self, id: ID, payload: bytes) -> None:  # For type-safety
+        await self.mqtt.publish(topic=f"{PUBLISH_PREFIX}/{id}/set", payload=payload, qos=1)
+
     async def publish_all_lights(self, message: LampMessage):
-        data = json.dumps(message)
-        gen = (self.mqtt.publish(topic=f"{PUBLISH_PREFIX}/{id}/set", payload=data, qos=1) for id in self._lights)
-        await asyncio.gather(*gen)
+        data = json.dumps(message)  # No need to re-dump for all lights.
+        await asyncio.gather(*(self._publish(l.id, data) for l in self._lights))
 
     async def publish_light(self, id: ID, message: LampMessage):
-        await self.mqtt.publish(topic=f"{PUBLISH_PREFIX}/{id}/set", payload=json.dumps(message), qos=1)
+        await self._publish(id, json.dumps(message))
 
     async def set_state(self, state: ModeState, state_setting: int = 0) -> None | str:
         try:
