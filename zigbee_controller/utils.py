@@ -14,7 +14,6 @@ from mytypes import (
     UINT8,
     ConfigFile,
     Device,
-    DeviceConfig,
     LampMessage,
     ModeState,
     RemoteRequest,
@@ -187,7 +186,7 @@ def load_config():
         lights: list[Device]
         remotes: list[Device]
 
-    with open("config.toml", "rb") as f:
+    with open("zigbee_controller/config.toml", "rb") as f:
         cfg = ConfigFile(**tomllib.load(f))  # remotes might be missing
     return RetType(
         lights=[Device(**l) for l in cfg["lights"]],
