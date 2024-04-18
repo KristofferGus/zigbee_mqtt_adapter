@@ -5,6 +5,7 @@ from collections import deque
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
+import orjson as json
 from mytypes import COLORS_UINT8, COLORTEMP250_454, ID, RGBI_UINT8, LampMessage
 from utils import RGB_to_XY
 
@@ -19,7 +20,11 @@ def gen_lamp_message(colors: RGBI_UINT8 | None, color_temp: COLORTEMP250_454 = 2
     return LampMessage(state="ON", brightness=i, color=RGB_to_XY(r, g, b), color_temp=color_temp)
 
 
-async def publish_apply_mapping(controller: MyController, lights: Iterable[ID], mapping_message: list[LampMessage]):
+async def publish_apply_mapping(
+    controller: MyController,
+    lights: Iterable[ID],
+    mapping_message: list[bytes] | list[LampMessage],
+):
     await asyncio.gather(*(controller.publish_light(id, rc) for id, rc in zip(lights, mapping_message)))
 
 
@@ -30,8 +35,8 @@ async def _rotate_lights_1step(
     sleep: float = 0.5,
     clockwise: bool = False,
 ):
-    # Mapping
-    color_mapping_message = [gen_lamp_message(rgbi) for rgbi in colors_mapping]
+    # Mapping, store as dump to reduce re-dumping.
+    color_mapping_message = [json.dumps(gen_lamp_message(rgbi)) for rgbi in colors_mapping]
     if clockwise:
         color_mapping_message.reverse()
 

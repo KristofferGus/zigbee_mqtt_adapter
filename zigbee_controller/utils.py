@@ -72,8 +72,12 @@ class MyController:  # Seen as singleton
         data = json.dumps(message)  # No need to re-dump for all lights.
         await asyncio.gather(*(self._publish(l.id, data) for l in self._lights))
 
-    async def publish_light(self, id: ID, message: LampMessage):
-        await self._publish(id, json.dumps(message))
+    async def publish_light(self, id: ID, message: LampMessage | bytes):
+        """Bytes for pre-dumped messages, for speedup"""
+        if isinstance(message, bytes):
+            await self._publish(id, message)
+        else:
+            await self._publish(id, json.dumps(message))
 
     async def set_state(self, state: ModeState, state_setting: int = 0) -> None | str:
         try:
