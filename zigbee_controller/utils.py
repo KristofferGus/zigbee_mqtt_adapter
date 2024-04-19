@@ -16,6 +16,10 @@ def RGB_to_XY(r: UINT8, g: UINT8, b: UINT8) -> XYColor:
     return XYColor(x=x, y=y)
 
 
+def gen_description(*strings: str):
+    return "\n\n".join(strings)
+
+
 def load_config():
     class RetType(TypedDict):
         lights: list[Device]

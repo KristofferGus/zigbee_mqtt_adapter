@@ -16,7 +16,7 @@ from mytypes import (
     LampState,
     Mode,
 )
-from utils import RGB_to_XY
+from utils import RGB_to_XY, gen_description
 
 
 async def default_mode_guard(connection: ASGIConnection, handler: BaseRouteHandler) -> None:
@@ -28,10 +28,10 @@ async def default_mode_guard(connection: ASGIConnection, handler: BaseRouteHandl
 class RootRouter(Controller):
     @get(
         path="/",
-        description=(
-            "Returns json with Keys: 'light', 'remotes', 'states'\n\n"
-            "light/remote-value: list of valid ids\n\n"
-            "state-value: dict of index and their given name, index should be used"
+        description=gen_description(
+            "Returns json with Keys: 'light', 'remotes', 'states'",
+            "light/remote-value: list of valid ids",
+            "state-value: dict of index and their given name, index should be used",
         ),
     )
     async def root(self, controller: MyController) -> dict[str, list[str] | dict[int, str]]:
@@ -71,10 +71,10 @@ class RootRouter(Controller):
 
     @get(
         path=["/state/{id:int}", "/state/{id:int}/{setting:int}"],
-        description=(
-            "If only one path is given, then use default setting of this state.\n\n"
-            "Second path sets the setting of the state\n\n"
-            f"Valid values of states is: {list(range(len(Mode)))}"
+        description=gen_description(
+            "If only one path is given, then use default setting of this state.",
+            "Second path sets the setting of the state",
+            f"Valid values of states is: {list(range(len(Mode)))}",
         ),
         raises=[ClientException],
     )
@@ -87,18 +87,20 @@ class RootRouter(Controller):
                 raise ClientException(err)
         return OK
 
+    _ldescription = gen_description(
+        "ONLY Allowed during Default state; reset or change state first!",
+        "index -> light starting from: door(0)->longwall-shortwall-windows(max)",
+        " index uses comma separated ints: light/1,2,3 or light?index=1,2,3",
+        "No index given, then all lights",
+        "(st)ate: ON | OFF",
+        "brightness: 0-255",
+        "color: [RED_UINT8, GREEN_UINT8, BLUE_UINT8]",
+        "color_temp: 250-454 (~2500k-4540k)",
+    )
+
     @get(
         path=["/light", "light/{index:str}"],
-        description=(
-            "ONLY Allowed during Default state; reset or change state first!\n\n"
-            "index -> light starting from: door(0)->longwall-shortwall-windows(max)\n\n"
-            " index uses comma separated ints: light/1,2,3 or light?index=1,2,3\n\n"
-            "No index given, then all lights\n\n"
-            "(st)ate: ON | OFF\n\n"
-            "brightness: 0-255\n\n"
-            "color: [RED_UINT8, GREEN_UINT8, BLUE_UINT8]\n\n"
-            "color_temp: 250-454 (~2500k-4540k)"
-        ),
+        description=_ldescription,
         guards=[default_mode_guard],
         raises=[ClientException],
     )
@@ -123,17 +125,7 @@ class RootRouter(Controller):
 
     @post(
         path=["/light", "light/{index:str}"],
-        description=(
-            "ONLY Allowed during Default state; reset or change state first!\n\n"
-            "At least one parameter has to be used, some can be omitted.\n\n"
-            "index -> light starting from: door(0)->longwall-shortwall-windows(max)\n\n"
-            " index uses comma separated ints: light/1,2,3 or light?index=1,2,3\n\n"
-            "No index given, then all lights\n\n"
-            "state: ON | OFF\n\n"
-            "brightness: 0-255\n\n"
-            "color: [RED_UINT8, GREEN_UINT8, BLUE_UINT8]\n\n"
-            "color_temp: 250-454 (~2500k-4540k)"
-        ),
+        description=_ldescription,
         guards=[default_mode_guard],
         raises=[ClientException],
     )
