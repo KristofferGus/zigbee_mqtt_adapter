@@ -64,15 +64,17 @@ class MyController:  # Seen as singleton
 
     async def publish_selected_lights(self, indices: list[int] | None, message: LampMessage):
         """None publishes to all"""
-        data = json.dumps(message)  # No need to re-dump for all lights.
-        ids = (self._lights[i].id for i in indices) if indices else (i.id for i in self._lights)
-        await asyncio.gather(*(self._publish(i, data) for i in ids))
+        if message:
+            data = json.dumps(message)  # No need to re-dump for all lights.
+            ids = (self._lights[i].id for i in indices) if indices else (i.id for i in self._lights)
+            await asyncio.gather(*(self._publish(i, data) for i in ids))
 
     async def publish_light(self, id: ID, message: LampMessage | bytes):
         """Bytes for pre-dumped messages, for speedup"""
-        if not isinstance(message, bytes):
-            message = json.dumps(message)
-        await self._publish(id, message)
+        if message:
+            if not isinstance(message, bytes):
+                message = json.dumps(message)
+            await self._publish(id, message)
 
     async def set_state(self, mode: Mode, mode_setting: int = 0) -> None:
         try:
