@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from const import OK
 from litestar import get, post
+from litestar.connection import ASGIConnection
 from litestar.controller import Controller
 from litestar.exceptions import ClientException
+from litestar.handlers.base import BaseRouteHandler
 from mycontroller import MyController
 from mytypes import (
     BRIGHTNESS_UNIT8,
@@ -15,6 +17,12 @@ from mytypes import (
     Mode,
 )
 from utils import RGB_to_XY
+
+
+async def default_mode_guard(connection: ASGIConnection, handler: BaseRouteHandler) -> None:
+    controller: MyController = await connection.app.dependencies["controller"]()
+    if controller.mode.name != Mode.DEFAULT:
+        raise ClientException("Only allowed during *Default* state, reset or change first")
 
 
 class RootRouter(Controller):
@@ -92,6 +100,7 @@ class RootRouter(Controller):
             "color: [RED_UINT8, GREEN_UINT8, BLUE_UINT8]\n\n"
             "color_temp: 250-454 (~2500k-4540k)"
         ),
+        guards=[default_mode_guard],
         raises=[ClientException],
     )
     async def update_light_get(
@@ -129,6 +138,7 @@ class RootRouter(Controller):
             "color: [RED_UINT8, GREEN_UINT8, BLUE_UINT8]\n\n"
             "color_temp: 250-454 (~2500k-4540k)"
         ),
+        guards=[default_mode_guard],
         raises=[ClientException],
     )
     async def update_light_post(
@@ -155,9 +165,6 @@ class RootRouter(Controller):
         color: RGB | None = None,
         color_temp: COLORTEMP250_454 | None = None,
     ):
-        if controller.mode.name != Mode.DEFAULT:
-            raise ClientException("Only allowed during *Default* state, reset or change first")
-
         if pindex is not None or index is not None:
             if pindex is not None:
                 index = [pindex]
