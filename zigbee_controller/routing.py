@@ -116,10 +116,10 @@ class RootRouter(Controller):
     ) -> str:
         if color:
             try:
-                r, g, b = json.loads(color)
+                r, g, b = map(int, json.loads(color))
                 _color = (r, g, b)
             except:
-                raise ClientException("Too few/many colors given")
+                raise ClientException("Too few/many colors given or not an int")
         else:
             _color = None
         await self._validate_lamp_message_publish(
