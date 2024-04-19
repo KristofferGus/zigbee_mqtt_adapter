@@ -80,11 +80,13 @@ class RootRouter(Controller):
         return OK
 
     @get(
-        path=["/light", "light/{index:int}"],
+        path=["/light", "light/{pindex:int}"],
         description=(
             "ONLY Allowed during Default state; reset or change state first!\n\n"
-            "Query args, if path(index) is not -1 -> light starting from: door(0)->longwall-shortwall-windows(max)\n\n"
-            " Else if -1: all lights will be affected\n\n"
+            "Query args.\n\n"
+            "pindex -> light starting from: door(0)->longwall-shortwall-windows(max)\n\n"
+            "pindex for single light, takes priority over index(multiple/one)\n\n"
+            " Else: pindex is None and index is None: all lights will be affected\n\n"
             "(st)ate: ON | OFF\n\n"
             "brightness: 0-255\n\n"
             "color: [RED_UINT8, GREEN_UINT8, BLUE_UINT8]\n\n"
@@ -96,23 +98,32 @@ class RootRouter(Controller):
         self,
         controller: MyController,
         index: list[int] | None = None,
+        pindex: int | None = None,
         st: LampState | None = None,
         brightness: BRIGHTNESS_UNIT8 | None = None,
         color: RGB | None = None,
         color_temp: COLORTEMP250_454 | None = None,
     ) -> str:
         await self._validate_lamp_message_publish(
-            controller=controller, index=index, state=st, brightness=brightness, color=color, color_temp=color_temp
+            controller=controller,
+            index=index,
+            pindex=pindex,
+            state=st,
+            brightness=brightness,
+            color=color,
+            color_temp=color_temp,
         )
         return OK
 
     @post(
-        path=["/light", "light/{index:int}"],
+        path=["/light", "light/{pindex:int}"],
         description=(
             "ONLY Allowed during Default state; reset or change state first!\n\n"
             "At least one parameter has to be used, some can be omitted.\n\n"
-            "Query args, if path(index) is not -1 -> light starting from: door(0)->longwall-shortwall-windows(max)\n\n"
-            " Else if -1: all lights will be affected\n\n"
+            "Query args.\n\n"
+            "pindex -> light starting from: door(0)->longwall-shortwall-windows(max)\n\n"
+            "pindex for single light, takes priority over index(multiple/one)\n\n"
+            " Else: pindex is None and index is None: all lights will be affected\n\n"
             "state: ON | OFF\n\n"
             "brightness: 0-255\n\n"
             "color: [RED_UINT8, GREEN_UINT8, BLUE_UINT8]\n\n"
@@ -121,9 +132,13 @@ class RootRouter(Controller):
         raises=[ClientException],
     )
     async def update_light_post(
-        self, controller: MyController, message: LampApiMessage, index: list[int] | None = None
+        self,
+        controller: MyController,
+        message: LampApiMessage,
+        index: list[int] | None = None,
+        pindex: int | None = None,
     ) -> str:
-        await self._validate_lamp_message_publish(controller=controller, index=index, **message)
+        await self._validate_lamp_message_publish(controller=controller, index=index, pindex=pindex, **message)
         return OK
 
     """
@@ -134,6 +149,7 @@ class RootRouter(Controller):
     async def _validate_lamp_message_publish(
         controller: MyController,
         index: list[int] | None,
+        pindex: int | None,
         state: LampState | None = None,
         brightness: BRIGHTNESS_UNIT8 | None = None,
         color: RGB | None = None,
@@ -142,9 +158,12 @@ class RootRouter(Controller):
         if controller.mode.name != Mode.DEFAULT:
             raise ClientException("Only allowed during *Default* state, reset or change first")
 
-        if index:
+        if pindex is not None or index is not None:
+            if pindex is not None:
+                index = [pindex]
+            assert index is not None
             _num_lights = len(controller._lights)
-            if not all(0 <= i < _num_lights for i in index):
+            if not index or not all(0 <= i < _num_lights for i in index):
                 raise ClientException(f"Invalid index selected, select a value between 0-{_num_lights}")
 
         message = LampMessage()
