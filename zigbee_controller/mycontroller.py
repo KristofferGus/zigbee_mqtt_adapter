@@ -16,7 +16,7 @@ class MyController:  # Seen as singleton
         self.lock = asyncio.Lock()
         self._lights = lights
         self._remotes = remotes
-        self.mode: ls.LightShowMode | DefaultMode = DefaultMode()
+        self.mode: ModeABC = DefaultMode()
 
     async def __remote_listener(self):  # Actual remotes, always running.
         task_shield = set()  # Prevent tasks from disappearing

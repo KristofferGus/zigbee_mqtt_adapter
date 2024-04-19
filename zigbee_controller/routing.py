@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import orjson as json
 from const import OK
 from litestar import get, post
 from litestar.controller import Controller

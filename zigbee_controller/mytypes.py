@@ -61,6 +61,8 @@ class Mode(IntEnum):
 
 
 class ModeABC(ABC):
+    name: Mode
+
     async def run(self) -> None: ...
     async def cancel(self) -> None: ...
     async def remote_callback(self, message: RemoteRequest, remote_index: int) -> None:
