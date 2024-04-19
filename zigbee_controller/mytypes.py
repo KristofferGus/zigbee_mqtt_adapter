@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from abc import ABC
+import asyncio
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 from typing import Literal, TypedDict
+
+from aiomqtt import Client as MQTTClient
 
 COLORTEMP250_454 = int  # Probably 2500k-4540k but in 250-454 range.
 RED_UINT8 = GREEN_UINT8 = BLUE_UINT8 = UINT8 = UINT32 = BRIGHTNESS_UNIT8 = int
@@ -64,8 +67,11 @@ class Mode(IntEnum):
 class ModeABC(ABC):
     name: Mode
 
+    @abstractmethod
     async def run(self) -> None: ...
+    @abstractmethod
     async def cancel(self) -> None: ...
+    @abstractmethod
     async def remote_callback(self, message: RemoteRequest, remote_index: int) -> None:
         """
         Remote index gives you an interface to simply track remotes

@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 import uvicorn
-from const import HOST
 from litestar import Litestar, get
-from litestar.di import Provide
 from litestar.openapi import OpenAPIConfig, OpenAPIController
 from litestar.response import Redirect
 from litestar.status_codes import HTTP_301_MOVED_PERMANENTLY
-from mycontroller import MyController
+from mycontroller import controller
 from routing import RootRouter
-from utils import load_config
 
 
 class MyOpenAPIController(OpenAPIController):
@@ -22,22 +19,14 @@ async def redirect_schema() -> Redirect:
     return Redirect(path="/rschema/elements", status_code=HTTP_301_MOVED_PERMANENTLY)
 
 
-controller = MyController(mqtt_hostname=HOST, **load_config())
-
-
 async def init_controller():
     await controller.init_run()
-
-
-async def di_controller():  # Simply to reverse dependency (dependency injection)
-    return controller
 
 
 app = Litestar(
     debug=True,
     on_startup=[init_controller],
     route_handlers=[RootRouter, redirect_schema],
-    dependencies={"controller": Provide(di_controller)},
     openapi_config=OpenAPIConfig(title="My API", version="0.0.1", openapi_controller=MyOpenAPIController),
 )
 

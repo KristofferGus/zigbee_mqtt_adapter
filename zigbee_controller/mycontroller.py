@@ -6,8 +6,9 @@ from typing import cast
 import modes.light_show as ls
 import orjson as json
 from aiomqtt import Client as MQTTClient
-from const import PUBLISH_PREFIX
+from const import HOST, PUBLISH_PREFIX
 from mytypes import ID, Device, LampMessage, Mode, ModeABC, RemoteRequest
+from utils import load_config
 
 
 class MyController:  # Seen as singleton
@@ -96,3 +97,10 @@ class MyController:  # Seen as singleton
 
 class DefaultMode(ModeABC):
     name = Mode.DEFAULT
+
+    async def run(self) -> None: ...
+    async def cancel(self) -> None: ...
+    async def remote_callback(self, *_) -> None: ...
+
+
+controller = MyController(mqtt_hostname=HOST, **load_config())
