@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import orjson as json
 from const import OK
 from litestar import get, post
 from litestar.controller import Controller
 from litestar.exceptions import ClientException
-from mycontroller import DefaultMode, MyController
+from mycontroller import MyController
 from mytypes import (
     BRIGHTNESS_UNIT8,
     COLORTEMP250_454,
@@ -95,7 +96,7 @@ class RootRouter(Controller):
     async def update_light_get(
         self,
         controller: MyController,
-        index: int = -1,
+        index: list[int] | None = None,
         st: LampState | None = None,
         brightness: BRIGHTNESS_UNIT8 | None = None,
         color: RGB | None = None,
@@ -120,7 +121,9 @@ class RootRouter(Controller):
         ),
         raises=[ClientException],
     )
-    async def update_light_post(self, controller: MyController, message: LampApiMessage, index: int = -1) -> str:
+    async def update_light_post(
+        self, controller: MyController, message: LampApiMessage, index: list[int] | None = None
+    ) -> str:
         await self._validate_lamp_message_publish(controller=controller, index=index, **message)
         return OK
 
@@ -131,17 +134,19 @@ class RootRouter(Controller):
     @staticmethod
     async def _validate_lamp_message_publish(
         controller: MyController,
-        index: int,
+        index: list[int] | None,
         state: LampState | None = None,
         brightness: BRIGHTNESS_UNIT8 | None = None,
         color: RGB | None = None,
         color_temp: COLORTEMP250_454 | None = None,
     ):
-        if not isinstance(controller.mode, DefaultMode):
+        if controller.mode.name != Mode.DEFAULT:
             raise ClientException("Only allowed during *Default* state, reset or change first")
 
-        if not (-1 <= index < (clight_len := len(controller._lights))):
-            raise ClientException(f"Invalid index selected, select a value between 0-{clight_len}")
+        if index:
+            _num_lights = len(controller._lights)
+            if not all(0 <= i < _num_lights for i in index):
+                raise ClientException(f"Invalid index selected, select a value between 0-{_num_lights}")
 
         message = LampMessage()
         if state:
@@ -165,7 +170,4 @@ class RootRouter(Controller):
                     raise ClientException(f"Invalid color_temp value: 250-454 | 2500-4540, you gave: {color_temp}")
             message["color_temp"] = color_temp
 
-        if index == -1:
-            await controller.publish_all_lights(message=message)
-        else:
-            await controller.publish_light(id=controller._lights[index].id, message=message)
+        await controller.publish_selected_lights(indices=index, message=message)

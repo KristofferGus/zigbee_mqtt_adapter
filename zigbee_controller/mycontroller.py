@@ -60,8 +60,13 @@ class MyController:  # Seen as singleton
         await self.mqtt.publish(topic=f"{PUBLISH_PREFIX}/{id}/set", payload=payload, qos=1)
 
     async def publish_all_lights(self, message: LampMessage):
+        await self.publish_selected_lights(None, message=message)
+
+    async def publish_selected_lights(self, indices: list[int] | None, message: LampMessage):
+        """None publishes to all"""
         data = json.dumps(message)  # No need to re-dump for all lights.
-        await asyncio.gather(*(self._publish(l.id, data) for l in self._lights))
+        ids = (self._lights[i].id for i in indices) if indices else (i.id for i in self._lights)
+        await asyncio.gather(*(self._publish(i, data) for i in ids))
 
     async def publish_light(self, id: ID, message: LampMessage | bytes):
         """Bytes for pre-dumped messages, for speedup"""
