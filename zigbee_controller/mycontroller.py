@@ -74,7 +74,7 @@ class MyController:  # Seen as singleton
             message = json.dumps(message)
         await self._publish(id, message)
 
-    async def set_state(self, mode: Mode, mode_setting: int = 0) -> None | str:
+    async def set_state(self, mode: Mode, mode_setting: int = 0) -> None:
         try:
             match mode:
                 case Mode.DEFAULT:
@@ -88,7 +88,6 @@ class MyController:  # Seen as singleton
             await self.mode.cancel()
             self.mode = next_state
             await self.mode.run()
-            return None
         except BaseException as e:
             raise RuntimeError("Set state failed: " + str(e))
 
