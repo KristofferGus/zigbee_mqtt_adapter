@@ -83,8 +83,7 @@ class RootRouter(Controller):
             raise ClientException(f"Invalid id value: 0-{len(Mode)-1}, you gave: {id}")
 
         async with controller.lock:
-            if err := await controller.set_state(list(Mode)[id], setting):
-                raise ClientException(err)
+            await controller.set_state(list(Mode)[id], setting)
         return OK
 
     _ldescription = gen_description(
@@ -180,4 +179,5 @@ class RootRouter(Controller):
                     raise ClientException(f"Invalid color_temp value: 250-454 | 2500-4540, you gave: {color_temp}")
             message["color_temp"] = color_temp
 
-        await controller.publish_selected_lights(indices=indices, message=message)
+        async with controller.lock:
+            await controller.publish_selected_lights(indices=indices, message=message)
