@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 from typing import Literal, TypedDict
-
-from aiomqtt import Client as MQTTClient
 
 COLORTEMP250_454 = int  # Probably 2500k-4540k but in 250-454 range.
 RED_UINT8 = GREEN_UINT8 = BLUE_UINT8 = UINT8 = UINT32 = BRIGHTNESS_UNIT8 = int
