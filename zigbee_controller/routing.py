@@ -43,14 +43,12 @@ class RootRouter(Controller):
 
     @get(path="/on", status_code=200, description="Turns state on")
     async def on(self, controller: MyController) -> str:
-        async with controller.lock:
-            await controller.publish_all_lights(LampMessage(state="ON"))
+        await controller.publish_all_lights(LampMessage(state="ON"))
         return OK
 
     @get(path="/off", status_code=200, description="Turns state off")
     async def off(self, controller: MyController) -> str:
-        async with controller.lock:
-            await controller.publish_all_lights(LampMessage(state="OFF"))
+        await controller.publish_all_lights(LampMessage(state="OFF"))
         return OK
 
     @get(
@@ -179,5 +177,4 @@ class RootRouter(Controller):
                     raise ClientException(f"Invalid color_temp value: 250-454 | 2500-4540, you gave: {color_temp}")
             message["color_temp"] = color_temp
 
-        async with controller.lock:
-            await controller.publish_selected_lights(indices=indices, message=message)
+        await controller.publish_selected_lights(indices=indices, message=message)
