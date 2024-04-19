@@ -20,6 +20,7 @@ services:
     ports:
       - 8888:9999
     volumes:
+      - ./config.toml:/app/config.toml
       - ./zigbee_controller:/app
     restart: unless-stopped
     command: uvicorn main:app --log-level info --port 9999 --host "0.0.0.0" --workers 1 --reload
