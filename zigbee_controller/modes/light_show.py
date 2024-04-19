@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from collections import deque
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING
 
 import orjson as json
 from mytypes import (
