@@ -126,10 +126,9 @@ class RootRouter(Controller):
         description=(
             "ONLY Allowed during Default state; reset or change state first!\n\n"
             "At least one parameter has to be used, some can be omitted.\n\n"
-            "Query args.\n\n"
-            "pindex -> light starting from: door(0)->longwall-shortwall-windows(max)\n\n"
-            "pindex for single light, takes priority over index(multiple/one)\n\n"
-            " Else: pindex is None and index is None: all lights will be affected\n\n"
+            "index -> light starting from: door(0)->longwall-shortwall-windows(max)\n\n"
+            " index uses comma separated ints: light/1,2,3 or light?index=1,2,3\n\n"
+            "No index given, then all lights\n\n"
             "state: ON | OFF\n\n"
             "brightness: 0-255\n\n"
             "color: [RED_UINT8, GREEN_UINT8, BLUE_UINT8]\n\n"
