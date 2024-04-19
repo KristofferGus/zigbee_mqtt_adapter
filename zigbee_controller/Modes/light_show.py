@@ -43,18 +43,15 @@ class LightShowMode(ModeABC):
         self.setting = min(len(self.routines) - 1, max(0, routine_index))
         self._background_task: asyncio.Task | None = None
 
-    @override
     async def run(self) -> None:
         self._background_task = asyncio.create_task(self.routines[self.setting])
 
-    @override
     async def remote_callback(self, message: RemoteRequest, remote_index: int) -> None:
         self.setting += 1
         if self.setting >= len(self.routines):
             self.setting = 0
         await self.controller.set_state(self.name, self.setting)
 
-    @override
     async def cancel(self) -> None:
         if self._background_task:
             self._background_task.cancel()
