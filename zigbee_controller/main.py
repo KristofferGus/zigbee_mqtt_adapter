@@ -19,7 +19,7 @@ class MyOpenAPIController(OpenAPIController):
 @get(path="/schema", status_code=HTTP_301_MOVED_PERMANENTLY, include_in_schema=False)
 async def redirect_schema() -> Redirect:
     """Redoc is default, no 2nd path. Other: swagger, elements, rapidoc"""
-    return Redirect(path="/rschema/elements")
+    return Redirect(path="/rschema/elements", status_code=HTTP_301_MOVED_PERMANENTLY)
 
 
 controller = MyController(mqtt_hostname=HOST, **load_config())
