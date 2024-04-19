@@ -11,6 +11,8 @@ services:
     restart: unless-stopped
 
   zigbee_controller:
+    environment:
+      MQTT_ADDR: mqtt
     depends_on:
       - mqtt
     container_name: zbc
