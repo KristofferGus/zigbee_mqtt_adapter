@@ -14,7 +14,6 @@ from utils import load_config
 class MyController:  # Seen as singleton
     def __init__(self, mqtt_hostname: str, lights: list[Device], remotes: list[Device]):
         self.mqtt = MQTTClient(hostname=mqtt_hostname, port=1883, identifier="MyZip")
-        self.lock = asyncio.Lock()
         self._lights = lights
         self._remotes = remotes
         self.mode: ModeABC = DefaultMode()
