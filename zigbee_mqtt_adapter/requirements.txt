@@ -1,5 +1,0 @@
-aiomqtt
-orjson
-litestar
-uvicorn
-rgbxy
